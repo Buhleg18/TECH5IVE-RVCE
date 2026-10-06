@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RVCE - Access</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050507;--white:#EDEDF2;--violet:#B49BFF;--violet-deep:#8B5CF6;--cyan:#19E3F5;--line:rgba(237,237,242,.35);--muted:#9A98A8;--error:#FF7A90}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:24px 16px;background:var(--bg);color:var(--white);font-family:"Space Grotesk",system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.08;mix-blend-mode:screen;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+.frame{position:relative;max-width:1100px;margin:0 auto;border:1px solid var(--line);padding:20px}
+.spark{position:absolute;width:15px;height:15px}
+.spark::before,.spark::after{content:"";position:absolute;background:var(--white)}
+.spark::before{left:7px;top:0;width:1px;height:15px}
+.spark::after{top:7px;left:0;height:1px;width:15px}
+.s1{top:-8px;left:-8px}.s2{top:-8px;right:-8px}.s3{bottom:-8px;left:-8px}.s4{bottom:-8px;right:-8px}
+.top{display:flex;justify-content:space-between;font-size:14px;letter-spacing:.05em;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.top span:last-child{color:var(--muted)}
+.hero{border-bottom:1px solid var(--line);padding:20px 0}
+h1{margin:0;font-family:"Unbounded",system-ui,sans-serif;font-weight:700;font-size:clamp(44px,10vw,118px);line-height:.98;text-transform:uppercase}
+.sub{display:flex;justify-content:space-between;gap:16px;margin-top:20px;color:var(--violet);font-size:15px;line-height:1.4;text-transform:uppercase}
+.sub span:last-child{text-align:right}
+.mid{display:grid;grid-template-columns:1fr 440px;border-bottom:1px solid var(--line)}
+.box{padding:24px}
+.globe{display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line);background:radial-gradient(circle at 50% 50%,rgba(139,92,246,.28),transparent 62%)}
+.globe svg{width:100%;max-width:340px;height:auto}
+.panel-title{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.08em;color:var(--violet);margin-bottom:16px;text-transform:uppercase}
+.tabs{display:flex;gap:8px;margin-bottom:22px}
+.tabs button{flex:1;padding:10px;background:none;border:1px solid var(--line);color:var(--muted);font:inherit;font-size:14px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:var(--violet);color:var(--white);background:rgba(139,92,246,.22)}
+.field{margin-bottom:16px}
+label{display:block;font-size:12px;letter-spacing:.08em;color:var(--violet);margin-bottom:6px;text-transform:uppercase}
+input{width:100%;padding:11px 12px;font:inherit;color:var(--white);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+input[aria-invalid="true"]{border-color:var(--error)}
+.hint{font-size:13px;color:var(--muted);margin-top:4px}
+.err{font-size:13px;color:var(--error);margin-top:4px}
+.pw{position:relative}
+.pw input{padding-right:64px}
+.pw button{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--cyan);font:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:8px}
+.go{width:100%;padding:13px;margin-top:8px;border:0;border-radius:0;background:var(--cyan);color:#001418;font:inherit;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.go:hover{background:var(--white)}
+.go:disabled{opacity:.5;cursor:wait}
+.msg{margin-top:16px;padding:12px;font-size:14px;line-height:1.5;border:1px solid}
+.msg.bad{color:var(--error);border-color:var(--error)}
+.msg.good{color:var(--cyan);border-color:var(--cyan)}
+.demo{font-size:12px;color:var(--violet);border:1px dashed var(--violet);padding:8px 10px;margin-bottom:18px}
+.bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding-top:16px;font-size:14px}
+.bar b{display:block;font-weight:500}
+#status{color:var(--violet);text-transform:uppercase}
+.bar time{text-align:center;color:var(--white)}
+.sig{text-align:right;letter-spacing:.05em}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-right:8px}
+@media(prefers-reduced-motion:no-preference){.dot{animation:blink 1.6s infinite}@keyframes blink{50%{opacity:.25}}}
+[hidden]{display:none!important}
+@media(max-width:820px){.mid{grid-template-columns:1fr}.globe{border-right:0;border-bottom:1px solid var(--line)}.globe svg{max-width:220px}.bar{grid-template-columns:1fr}.bar time,.sig{text-align:left}.sub{flex-direction:column}.sub span:last-child{text-align:left}}
+</style>
+</head>
+<body>
+<div class="frame">
+  <i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i><i class="spark s4"></i>
+
+  <header class="top"><span>RVCE_001</span><span>PROTOTYPE 1.0</span></header>
+
+  <section class="hero">
+    <h1>RVCE<br>Online</h1>
+    <div class="sub">
+      <span>Richfield virtual<br>computing environment</span>
+      <span>Log in to write<br>and run programs</span>
+    </div>
+  </section>
+
+  <section class="mid">
+    <div class="box globe" aria-hidden="true">
+      <svg viewBox="0 0 300 300" fill="none" stroke="#B49BFF" stroke-width="1">
+        <circle cx="150" cy="150" r="120" stroke="#EDEDF2" stroke-opacity=".8"/>
+        <ellipse cx="150" cy="150" rx="90" ry="120"/><ellipse cx="150" cy="150" rx="60" ry="120"/><ellipse cx="150" cy="150" rx="30" ry="120"/>
+        <line x1="150" y1="30" x2="150" y2="270"/>
+        <ellipse cx="150" cy="70" rx="89" ry="16" stroke="#EDEDF2" stroke-opacity=".6"/>
+        <ellipse cx="150" cy="110" rx="113" ry="20" stroke="#EDEDF2" stroke-opacity=".6"/>
+        <ellipse cx="150" cy="150" rx="120" ry="22" stroke="#EDEDF2" stroke-opacity=".6"/>
+        <ellipse cx="150" cy="190" rx="113" ry="20" stroke="#EDEDF2" stroke-opacity=".6"/>
+        <ellipse cx="150" cy="230" rx="89" ry="16" stroke="#EDEDF2" stroke-opacity=".6"/>
+        <path d="M150 140V160M140 150H160" stroke="#8B5CF6" stroke-width="4"/>
+        <path d="M20 40V20H40M280 40V20H260M20 260V280H40M280 260V280H260" stroke="#B49BFF"/>
+      </svg>
+    </div>
+
+    <div class="box">
+      <div class="panel-title"><span>Access control</span><span>[ secure ]</span></div>
+      <div class="demo" id="demoNote" hidden>DEMO MODE: no backend yet. Test login: 402311433 / Test1234</div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabLogin" aria-selected="true" aria-controls="loginForm">Log in</button>
+        <button role="tab" id="tabRegister" aria-selected="false" aria-controls="registerForm">Register</button>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="l_num">Student number</label>
+          <input id="l_num" name="studentNumber" inputmode="numeric" autocomplete="username" maxlength="9">
+          <div class="err" id="l_num_e" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="l_pw">Password</label>
+          <div class="pw">
+            <input id="l_pw" name="password" type="password" autocomplete="current-password">
+            <button type="button" data-show="l_pw">Show</button>
+          </div>
+          <div class="err" id="l_pw_e" role="alert"></div>
+        </div>
+        <button class="go" type="submit">Log in</button>
+        <div id="l_msg" role="status"></div>
+      </form>
+
+      <form id="registerForm" novalidate hidden>
+        <div class="field">
+          <label for="r_num">Student number</label>
+          <input id="r_num" name="studentNumber" inputmode="numeric" autocomplete="username" maxlength="9">
+          <div class="err" id="r_num_e" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="r_name">Full name</label>
+          <input id="r_name" name="fullName" autocomplete="name" maxlength="100">
+          <div class="err" id="r_name_e" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="r_mail">Email</label>
+          <input id="r_mail" name="email" type="email" autocomplete="email" maxlength="100">
+          <div class="err" id="r_mail_e" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="r_pw">Password</label>
+          <div class="pw">
+            <input id="r_pw" name="password" type="password" autocomplete="new-password">
+            <button type="button" data-show="r_pw">Show</button>
+          </div>
+          <div class="hint">At least 8 characters, with a letter and a number.</div>
+          <div class="err" id="r_pw_e" role="alert"></div>
+        </div>
+        <div class="field">
+          <label for="r_pw2">Confirm password</label>
+          <input id="r_pw2" type="password" autocomplete="new-password">
+          <div class="err" id="r_pw2_e" role="alert"></div>
+        </div>
+        <button class="go" type="submit">Create account</button>
+        <div id="r_msg" role="status"></div>
+      </form>
+    </div>
+  </section>
+
+  <footer class="bar">
+    <div><b>USER_001</b><span id="status">Awaiting login</span></div>
+    <time id="clock"></time>
+    <div class="sig"><i class="dot"></i>MODE: <span id="mode"></span></div>
+  </footer>
+</div>
+
+<script>
+/* ---------- SETTINGS (change these when Vania's backend is ready) ---------- */
+const CONFIG = {
+  DEMO_MODE: true,                        // true = fake backend, false = real backend
+  API_URL: "http://localhost:5000/api"    // address of Vania's backend (to be agreed)
+};
+
+/*
+  Agreed contract (draft):
+  POST /register  sends {studentNumber, fullName, email, password}
+                  gets  {success:true}  or  {error:"message"}
+  POST /login     sends {studentNumber, password}
+                  gets  {token, role}   or  {error:"message"}
+*/
+
+/* ---------- DEMO BACKEND (lives only in memory, saves nothing) ---------- */
+const demoUsers = { "402311433": { password: "Test1234", role: "Student" } };
+async function demoApi(path, body) {
+  await new Promise(r => setTimeout(r, 400));
+  if (path === "/register") {
+    if (demoUsers[body.studentNumber]) return { error: "That student number is already registered." };
+    demoUsers[body.studentNumber] = { password: body.password, role: "Student" };
+    return { success: true };
+  }
+  const u = demoUsers[body.studentNumber];
+  if (!u || u.password !== body.password) return { error: "Student number or password is wrong." };
+  return { token: "demo-token", role: u.role };
+}
+
+/* ---------- SEND A REQUEST (real or demo) ---------- */
+async function callApi(path, body) {
+  if (CONFIG.DEMO_MODE) return demoApi(path, body);
+  try {
+    const res = await fetch(CONFIG.API_URL + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    return await res.json();
+  } catch (e) {
+    return { error: "Cannot reach the server. Please try again." };
+  }
+}
+
+/* ---------- CHECKS (these must also be repeated in the backend) ---------- */
+const checks = {
+  studentNumber: v => /^\d{9}$/.test(v) ? "" : "Enter your 9-digit student number.",
+  fullName: v => v.trim().length >= 2 ? "" : "Enter your full name.",
+  email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "" : "Enter a valid email address.",
+  newPassword: v => (v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v)) ? "" : "Use at least 8 characters, with a letter and a number.",
+  anyPassword: v => v ? "" : "Enter your password."
+};
+
+function setError(id, text) {
+  const input = document.getElementById(id);
+  document.getElementById(id + "_e").textContent = text;
+  input.setAttribute("aria-invalid", text ? "true" : "false");
+  input.setAttribute("aria-describedby", id + "_e");
+  return !text;
+}
+function showMsg(id, text, kind) {
+  document.getElementById(id).innerHTML = text ? '<div class="msg ' + kind + '"></div>' : "";
+  if (text) document.querySelector("#" + id + " .msg").textContent = text;
+}
+function setStatus(text) { document.getElementById("status").textContent = text; }
+
+/* ---------- TABS ---------- */
+const forms = { login: loginForm, register: registerForm };
+function showTab(name) {
+  for (const k in forms) forms[k].hidden = k !== name;
+  tabLogin.setAttribute("aria-selected", name === "login");
+  tabRegister.setAttribute("aria-selected", name === "register");
+}
+tabLogin.onclick = () => showTab("login");
+tabRegister.onclick = () => showTab("register");
+
+/* ---------- SHOW / HIDE PASSWORD ---------- */
+document.querySelectorAll("[data-show]").forEach(b => b.onclick = () => {
+  const i = document.getElementById(b.dataset.show);
+  const hide = i.type === "text";
+  i.type = hide ? "password" : "text";
+  b.textContent = hide ? "Show" : "Hide";
+});
+
+/* ---------- LOG IN ---------- */
+loginForm.onsubmit = async e => {
+  e.preventDefault();
+  showMsg("l_msg", "");
+  const okNum = setError("l_num", checks.studentNumber(l_num.value.trim()));
+  const okPw = setError("l_pw", checks.anyPassword(l_pw.value));
+  if (!okNum || !okPw) return;
+
+  const btn = loginForm.querySelector(".go");
+  btn.disabled = true;
+  setStatus("Checking...");
+  const data = await callApi("/login", { studentNumber: l_num.value.trim(), password: l_pw.value });
+  btn.disabled = false;
+
+  if (data.error || !data.token) {
+    // Same message for every failure, so nobody can guess which student numbers exist
+    setStatus("Access denied");
+    showMsg("l_msg", data.error || "Student number or password is wrong.", "bad");
+    return;
+  }
+  // sessionStorage clears when the tab closes. The password is never stored.
+  sessionStorage.setItem("rvce_token", data.token);
+  sessionStorage.setItem("rvce_role", data.role);
+  sessionStorage.setItem("rvce_user", l_num.value.trim());
+  l_pw.value = "";
+  setStatus("Access granted");
+  showMsg("l_msg", "Logged in as " + data.role + ". Opening your dashboard...", "good");
+  setTimeout(() => { window.location.href = "dashboard.html"; }, 900);
+};
+
+/* ---------- REGISTER ---------- */
+registerForm.onsubmit = async e => {
+  e.preventDefault();
+  showMsg("r_msg", "");
+  const results = [
+    setError("r_num", checks.studentNumber(r_num.value.trim())),
+    setError("r_name", checks.fullName(r_name.value)),
+    setError("r_mail", checks.email(r_mail.value.trim())),
+    setError("r_pw", checks.newPassword(r_pw.value)),
+    setError("r_pw2", r_pw2.value === r_pw.value ? "" : "The passwords do not match.")
+  ];
+  if (results.includes(false)) return;
+
+  const btn = registerForm.querySelector(".go");
+  btn.disabled = true;
+  const data = await callApi("/register", {
+    studentNumber: r_num.value.trim(),
+    fullName: r_name.value.trim(),
+    email: r_mail.value.trim(),
+    password: r_pw.value
+  });
+  btn.disabled = false;
+
+  if (data.error || !data.success) {
+    showMsg("r_msg", data.error || "Could not create the account.", "bad");
+    return;
+  }
+  registerForm.reset();
+  showTab("login");
+  setStatus("Account created");
+  showMsg("l_msg", "Account created. You can log in now.", "good");
+};
+
+/* ---------- STATUS BAR: clock and mode ---------- */
+function tick() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  clock.textContent = p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear() + "  " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+tick(); setInterval(tick, 1000);
+mode.textContent = CONFIG.DEMO_MODE ? "DEMO" : "LIVE";
+demoNote.hidden = !CONFIG.DEMO_MODE;
+</script>
+</body>
+</html>
