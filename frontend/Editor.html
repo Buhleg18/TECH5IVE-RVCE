@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RVCE - Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1E1E1E;--bar:#181818;--panel:#252526;--hover:#2A2D2E;--border:#3C3C3C;--text:#D4D4D4;--muted:#A0A3A8;--accent:#6B4BE8;--accent-hover:#7C5CFA;--accent-text:#B9A6FF;--cyan:#4DD6E4;--error:#F48771;--ok:#89D185;--mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px}
+.nav{height:52px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bar);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand b{font-family:var(--mono);font-size:18px;font-weight:500;letter-spacing:.04em;color:#fff}
+.brand b span{color:var(--accent-text)}
+.brand small{color:var(--muted);font-size:13px}
+.user{display:flex;align-items:center;gap:12px;font-size:14px}
+.badge{padding:2px 8px;border:1px solid var(--cyan);border-radius:3px;color:var(--cyan);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.badge.lecturer{border-color:var(--accent-text);color:var(--accent-text)}
+.badge.administrator{border-color:#fff;color:#fff}
+.toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 24px;background:var(--panel);border-bottom:1px solid var(--border)}
+.back{color:var(--accent-text);text-decoration:none;font-size:14px}
+.back:hover{text-decoration:underline}
+h1{margin:0;font-size:17px;font-weight:600;color:#fff;word-break:break-word}
+.dirty{font-family:var(--mono);font-size:12px;color:var(--cyan)}
+.tools{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.go{padding:7px 18px;border:0;border-radius:3px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.go:hover{background:var(--accent-hover)}
+.btn{padding:6px 14px;background:none;border:1px solid var(--border);border-radius:3px;color:var(--text);font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{background:var(--hover)}
+.btn.open{border-color:var(--accent-text);color:var(--accent-text)}
+.btn.danger{border-color:rgba(244,135,113,.5);color:var(--error)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+#pageMsg{padding:0 24px}
+.msg{margin-top:12px;padding:10px 12px;font-size:14px;color:var(--error);border-left:3px solid var(--error);background:rgba(244,135,113,.1)}
+.work{flex:1;display:grid;grid-template-columns:1fr 380px;gap:16px;padding:16px 24px}
+.editor{display:flex;flex-direction:column;gap:12px;min-width:0}
+.gutterwrap{flex:1;display:flex;min-height:420px;background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.gutterwrap:focus-within{outline:2px solid var(--cyan)}
+#gutter{margin:0;min-width:46px;padding:12px 10px;overflow:hidden;text-align:right;background:var(--panel);border-right:1px solid var(--border);color:var(--muted);font:14px/1.6 var(--mono);user-select:none}
+#code{flex:1;min-width:0;padding:12px;border:0;outline:0;resize:none;background:transparent;color:#fff;font:14px/1.6 var(--mono);white-space:pre;overflow:auto}
+.demohelp{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 14px}
+.demohelp summary{cursor:pointer;color:var(--accent-text)}
+.demohelp code{font-family:var(--mono);color:var(--text)}
+.demohelp p{margin:8px 0 0;line-height:1.7}
+.state{align-self:start;background:var(--panel);border:1px solid var(--border);border-radius:6px}
+.sec{padding:14px 16px;border-top:1px solid var(--border)}
+.sec.first{border-top:0;display:flex;justify-content:space-between;align-items:center}
+.stitle{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.sec.first .stitle{margin:0}
+.pill{padding:2px 10px;border:1px solid var(--border);border-radius:3px;font-family:var(--mono);font-size:12px;text-transform:uppercase;color:var(--muted)}
+.pill.running{border-color:var(--cyan);color:var(--cyan)}
+.pill.halted{border-color:var(--ok);color:var(--ok)}
+.pill.error{border-color:var(--error);color:var(--error)}
+.kv{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kv .wide{grid-column:1/-1}
+.kv dt{font-size:12px;color:var(--muted)}
+.kv dd{margin:2px 0 0;font-family:var(--mono);color:#fff;word-break:break-word}
+.regs{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px}
+.reg{padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:3px;display:flex;justify-content:space-between;gap:6px;font-family:var(--mono);font-size:13px}
+.reg .rn{color:var(--muted)}
+.reg .rv{color:#fff}
+.reg.changed{border-color:var(--cyan)}
+.reg.changed .rv{color:var(--cyan)}
+.empty{font-size:13px;color:var(--muted)}
+.mem{max-height:150px;overflow:auto}
+.mem table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+.mem th{text-align:left;font-weight:400;color:var(--muted);padding:3px 0}
+.mem td{padding:3px 0;color:#fff}
+.mem tr.changed td{color:var(--cyan)}
+.out{margin:0;min-height:44px;max-height:120px;overflow:auto;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:3px;font:13px/1.5 var(--mono);color:#fff;white-space:pre-wrap}
+.errbox{margin:0;padding:12px 16px;border-top:1px solid var(--error);background:rgba(244,135,113,.1);color:var(--error);font-size:14px;line-height:1.5}
+.statusbar{display:flex;justify-content:space-between;gap:16px;padding:6px 16px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:12px}
+[hidden]{display:none!important}
+@media(max-width:900px){.work{grid-template-columns:1fr;padding:16px}.nav,.toolbar{padding-left:16px;padding-right:16px}.brand small{display:none}.tools{margin-left:0}.statusbar{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="brand"><b>RVC<span>E</span></b><small>Richfield Virtual Computing Environment</small></div>
+  <div class="user">
+    <span id="welcome">-</span>
+    <span class="badge" id="roleBadge">-</span>
+    <button class="btn" id="logoutBtn" type="button">Log out</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <a class="back" href="dashboard.html">&larr; Programs</a>
+  <h1 id="pname">Loading...</h1>
+  <span class="dirty" id="dirty" hidden>&bull; unsaved changes</span>
+  <div class="tools">
+    <button class="btn" id="saveBtn" type="button">Save</button>
+    <button class="btn" id="resetBtn" type="button">Reset</button>
+    <button class="btn danger" id="haltBtn" type="button">Halt</button>
+    <button class="btn open" id="stepBtn" type="button">Step</button>
+    <button class="go" id="runBtn" type="button">Run</button>
+  </div>
+</div>
+<div id="pageMsg" role="alert"></div>
+
+<main class="work">
+  <section class="editor">
+    <div class="gutterwrap">
+      <pre id="gutter" aria-hidden="true">1</pre>
+      <textarea id="code" spellcheck="false" wrap="off" aria-label="Program code"></textarea>
+    </div>
+    <details class="demohelp" id="demoHelp" hidden>
+      <summary>Demo mode: test instructions (made up, only to test this screen)</summary>
+      <p><code>LOAD R1, 5</code> put 5 in R1 &nbsp; <code>MOV R1, R2</code> copy R2 into R1<br>
+      <code>ADD R1, R2</code> &nbsp; <code>SUB R1, R2</code> &nbsp; <code>STORE R1, 100</code> save R1 at address 100<br>
+      <code>READ R1, 100</code> &nbsp; <code>CMP R1, R2</code> &nbsp; <code>JMP 0</code> &nbsp; <code>JEQ 0</code> &nbsp; <code>JNE 0</code> jump to instruction number<br>
+      <code>PRINT R1</code> &nbsp; <code>HALT</code> &nbsp; Registers: R0 to R3. Start a comment with <code>;</code></p>
+    </details>
+  </section>
+
+  <aside class="state" aria-label="Machine state">
+    <div class="sec first"><span class="stitle">Machine state</span><span class="pill" id="pill">Ready</span></div>
+    <div class="sec">
+      <dl class="kv">
+        <div><dt>Step</dt><dd id="stStep">0</dd></div>
+        <div><dt>PC (next instruction)</dt><dd id="stPc">0</dd></div>
+        <div class="wide"><dt>Last instruction done</dt><dd id="stIns">-</dd></div>
+      </dl>
+    </div>
+    <div class="sec"><div class="stitle">Registers</div><div id="regs" class="regs"></div></div>
+    <div class="sec"><div class="stitle">Memory</div><div id="mem" class="mem"></div></div>
+    <div class="sec"><div class="stitle">Output</div><pre id="out" class="out"></pre></div>
+    <div class="errbox" id="errbox" role="alert" hidden></div>
+  </aside>
+</main>
+
+<footer class="statusbar">
+  <span><span id="who">USER</span> &middot; MODE: <span id="mode"></span></span>
+  <span id="status">Loading...</span>
+  <time id="clock"></time>
+</footer>
+
+<script>
+/* ---------- SETTINGS (same as the other pages) ---------- */
+const CONFIG = {
+  DEMO_MODE: true,
+  API_URL: "http://localhost:5000/api"
+};
+
+/*
+  Contract with Vania (draft). Every request sends: Authorization: Bearer <token>
+  GET  /programs/{id}   gets {programId, programName, sourceCode}
+  PUT  /programs/{id}   sends {sourceCode}                    gets {success:true}
+  POST /run             sends {programId, sourceCode, mode, sessionId?}   gets a STATE
+                        mode is "run" (always from the start, to the end) or "step" (one instruction).
+                        sessionId is sent only to carry on stepping an unfinished program.
+  POST /reset           sends {sessionId}                     gets a clean STATE
+  POST /halt            sends {sessionId}                     gets a STATE with status "halted"
+
+  STATE = { sessionId, status: "ready"|"running"|"halted"|"error", stepNumber,
+            pc (address of the NEXT instruction), instruction (the one just done),
+            registers: {name: value}, memoryChanges: [{address, value}],
+            output: "text", error: null or "message" }
+  A request that failed completely (not an EVM error) gets only {error:"message"}.
+  A bad ticket gets {error:"unauthorized"}.
+*/
+
+const $ = id => document.getElementById(id);
+
+/* ---------- MUST BE LOGGED IN, AND NEED A PROGRAM ID ---------- */
+const token = sessionStorage.getItem("rvce_token");
+const role = sessionStorage.getItem("rvce_role");
+const user = sessionStorage.getItem("rvce_user");
+const fullName = sessionStorage.getItem("rvce_name");
+const programId = new URLSearchParams(location.search).get("id");
+if (!token) window.location.replace("login.html");
+else if (!programId) window.location.replace("dashboard.html");
+
+/* ---------- DEMO BACKEND: a tiny fake EVM so the screen can be tested ---------- */
+const DEMO_EXAMPLE = "; Add 5 and 3, keep the answer in memory\nLOAD R1, 5\nLOAD R2, 3\nADD R1, R2\nSTORE R1, 100\nPRINT R1\nHALT";
+const demoSessions = {};
+let demoNext = 1;
+
+function demoNewSession(src) {
+  const code = src.split("\n").map(l => l.split(";")[0].trim()).filter(Boolean);
+  const s = { sessionId: demoNext++, code, status: "ready", stepNumber: 0, pc: 0, instruction: "-",
+              reg: { R0: 0, R1: 0, R2: 0, R3: 0 }, mem: {}, flag: false, output: "", error: null, changes: [] };
+  demoSessions[s.sessionId] = s;
+  return s;
+}
+function demoOneStep(s) {
+  if (s.pc < 0 || s.pc >= s.code.length) throw new Error("Ran past the end of the program (is there a HALT?)");
+  const line = s.code[s.pc], p = line.replace(/,/g, " ").split(/\s+/), op = p[0].toUpperCase();
+  const R = n => { if (!/^R[0-3]$/i.test(n || "")) throw new Error("Unknown register: " + n); return n.toUpperCase(); };
+  const N = v => { const x = Number(v); if (v === undefined || !Number.isInteger(x)) throw new Error("Need a whole number, got: " + v); return x; };
+  const A = v => { const a = N(v); if (a < 0 || a > 255) throw new Error("Memory address out of range (0 to 255): " + a); return a; };
+  let next = s.pc + 1;
+  s.instruction = line; s.stepNumber++; s.changes = [];
+  switch (op) {
+    case "LOAD": s.reg[R(p[1])] = N(p[2]); break;
+    case "MOV": s.reg[R(p[1])] = s.reg[R(p[2])]; break;
+    case "ADD": s.reg[R(p[1])] += s.reg[R(p[2])]; break;
+    case "SUB": s.reg[R(p[1])] -= s.reg[R(p[2])]; break;
+    case "STORE": { const a = A(p[2]); s.mem[a] = s.reg[R(p[1])]; s.changes = [{ address: a, value: s.mem[a] }]; break; }
+    case "READ": s.reg[R(p[1])] = s.mem[A(p[2])] || 0; break;
+    case "CMP": s.flag = s.reg[R(p[1])] === s.reg[R(p[2])]; break;
+    case "JMP": next = N(p[1]); break;
+    case "JEQ": if (s.flag) next = N(p[1]); break;
+    case "JNE": if (!s.flag) next = N(p[1]); break;
+    case "PRINT": s.output += s.reg[R(p[1])] + "\n"; break;
+    case "HALT": s.status = "halted"; next = s.pc; break;
+    default: throw new Error("Unknown instruction: " + p[0]);
+  }
+  s.pc = next;
+}
+function demoStateOf(s, changes) {
+  return { sessionId: s.sessionId, status: s.status, stepNumber: s.stepNumber, pc: s.pc, instruction: s.instruction,
+           registers: { ...s.reg }, memoryChanges: changes || s.changes, output: s.output, error: s.error };
+}
+function demoMeta(id, name, dateOnly) {
+  let list = null;
+  try { list = JSON.parse(sessionStorage.getItem("rvce_demo_programs")); } catch (e) {}
+  list = list || [{ programId: 1, programName: "Hello world", dateModified: new Date().toISOString() },
+                  { programId: 2, programName: "Add two numbers", dateModified: new Date().toISOString() }];
+  const p = list.find(x => String(x.programId) === String(id));
+  if (p && dateOnly) { p.dateModified = new Date().toISOString(); try { sessionStorage.setItem("rvce_demo_programs", JSON.stringify(list)); } catch (e) {} }
+  return p;
+}
+async function demoApi(method, path, body) {
+  await new Promise(r => setTimeout(r, 200));
+  const m = path.match(/^\/programs\/(\d+)$/);
+  if (m && method === "GET") {
+    const p = demoMeta(m[1]);
+    let src = ""; try { src = sessionStorage.getItem("rvce_demo_src_" + m[1]) || ""; } catch (e) {}
+    return { programId: +m[1], programName: p ? p.programName : "Demo program", sourceCode: src };
+  }
+  if (m && method === "PUT") {
+    try { sessionStorage.setItem("rvce_demo_src_" + m[1], body.sourceCode); } catch (e) {}
+    demoMeta(m[1], null, true);
+    return { success: true };
+  }
+  if (path === "/run") {
+    let s = body.sessionId && demoSessions[body.sessionId];
+    if (body.mode === "run" || !s || s.status !== "running") {
+      s = demoNewSession(body.sourceCode);
+      if (!s.code.length) { s.status = "error"; s.error = "The program is empty."; return demoStateOf(s); }
+    }
+    s.status = "running"; s.error = null;
+    const all = {};
+    try {
+      let guard = 0;
+      do {
+        demoOneStep(s);
+        s.changes.forEach(c => all[c.address] = c.value);
+        if (body.mode === "step") break;
+        if (++guard > 1000) throw new Error("Stopped after 1000 steps (an endless loop?)");
+      } while (s.status === "running");
+    } catch (e) { s.status = "error"; s.error = "Step " + (s.stepNumber) + ": " + e.message; }
+    const list = body.mode === "run" ? Object.keys(all).map(a => ({ address: +a, value: all[a] })) : s.changes;
+    return demoStateOf(s, list);
+  }
+  const s = demoSessions[body && body.sessionId];
+  if (path === "/reset" && s) { const f = demoNewSession(s.code.join("\n")); return demoStateOf(f); }
+  if (path === "/halt" && s) { s.status = "halted"; return demoStateOf(s, []); }
+  return { error: "Session not found." };
+}
+
+/* ---------- SEND A REQUEST (real or demo) ---------- */
+async function api(method, path, body) {
+  let data;
+  if (CONFIG.DEMO_MODE) data = await demoApi(method, path, body);
+  else {
+    try {
+      const res = await fetch(CONFIG.API_URL + path, {
+        method,
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      data = await res.json();
+    } catch (e) { data = { error: "Cannot reach the server. Please try again." }; }
+  }
+  if (data.error === "unauthorized") logout();
+  return data;
+}
+
+/* ---------- SMALL HELPERS ---------- */
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function setStatus(t) { $("status").textContent = t; }
+function showError(t) {
+  $("pageMsg").innerHTML = t ? '<div class="msg"></div>' : "";
+  if (t) $("pageMsg").firstChild.textContent = t;   // textContent: safe against injected code
+}
+function logout() {
+  ["rvce_token", "rvce_role", "rvce_user", "rvce_name"].forEach(k => sessionStorage.removeItem(k));
+  window.location.replace("login.html");
+}
+
+/* ---------- THE EDITOR ---------- */
+let savedText = "", state = null, prevRegs = {}, memMap = {}, busy = false;
+const code = $("code");
+
+function updateGutter() {
+  const n = code.value.split("\n").length;
+  $("gutter").textContent = Array.from({ length: n }, (_, i) => i + 1).join("\n");
+  $("gutter").scrollTop = code.scrollTop;
+}
+function updateDirty() { $("dirty").hidden = code.value === savedText; }
+code.addEventListener("input", () => {
+  updateGutter(); updateDirty();
+  if (state && state.status === "running") setStatus("Code changed. Press Reset to use the new version.");
+});
+code.addEventListener("scroll", () => { $("gutter").scrollTop = code.scrollTop; });
+window.addEventListener("beforeunload", e => { if (code.value !== savedText) { e.preventDefault(); e.returnValue = ""; } });
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); } });
+
+/* ---------- SHOWING THE MACHINE STATE ---------- */
+function renderRegs(regs) {
+  const box = $("regs"); box.innerHTML = "";
+  const keys = Object.keys(regs);
+  if (!keys.length) { box.appendChild(el("span", "empty", "Run or step the program to see the registers.")); return; }
+  keys.forEach(k => {
+    const changed = prevRegs[k] !== undefined && prevRegs[k] !== regs[k];
+    const c = el("div", "reg" + (changed ? " changed" : ""));
+    c.append(el("span", "rn", k), el("span", "rv", String(regs[k])));
+    box.appendChild(c);
+  });
+  prevRegs = { ...regs };
+}
+function renderMem(latest) {
+  const box = $("mem"); box.innerHTML = "";
+  const addrs = Object.keys(memMap).map(Number).sort((a, b) => a - b);
+  if (!addrs.length) { box.appendChild(el("span", "empty", "No memory changes yet.")); return; }
+  const t = el("table"), head = el("tr");
+  head.append(el("th", "", "Address"), el("th", "", "Value"));
+  t.appendChild(head);
+  const fresh = new Set(latest.map(c => Number(c.address)));
+  addrs.forEach(a => {
+    const r = el("tr", fresh.has(a) ? "changed" : "");
+    r.append(el("td", "", String(a)), el("td", "", String(memMap[a])));
+    t.appendChild(r);
+  });
+  box.appendChild(t);
+}
+function updateButtons() {
+  const running = state && state.status === "running";
+  ["saveBtn", "resetBtn", "stepBtn", "runBtn"].forEach(id => $(id).disabled = busy);
+  $("haltBtn").disabled = busy || !running;
+}
+function applyState(st, fresh) {
+  if (fresh) { memMap = {}; prevRegs = {}; }
+  state = st;
+  const changes = st.memoryChanges || [];
+  changes.forEach(c => memMap[c.address] = c.value);
+  $("pill").textContent = st.status;
+  $("pill").className = "pill " + st.status;
+  $("stStep").textContent = st.stepNumber;
+  $("stPc").textContent = st.pc;
+  $("stIns").textContent = st.instruction || "-";
+  renderRegs(st.registers || {});
+  renderMem(changes);
+  $("out").textContent = st.output || "";
+  $("errbox").hidden = !st.error;
+  $("errbox").textContent = st.error || "";
+  updateButtons();
+}
+function setBusy(b) { busy = b; updateButtons(); }
+
+/* ---------- THE BUTTONS ---------- */
+async function exec(mode) {
+  showError(""); setBusy(true); setStatus(mode === "run" ? "Running..." : "Stepping...");
+  const carryOn = mode === "step" && state && state.status === "running";
+  const body = { programId, sourceCode: code.value, mode };
+  if (carryOn) body.sessionId = state.sessionId;
+  const d = await api("POST", "/run", body);
+  setBusy(false);
+  if (d.error && d.sessionId === undefined) { showError(d.error); setStatus("Request failed"); return; }
+  applyState(d, !carryOn);
+  setStatus(d.status === "error" ? "Error" : d.status === "halted" ? "Program finished after " + d.stepNumber + " steps" : "Step " + d.stepNumber + " done");
+}
+async function reset() {
+  showError("");
+  if (!state || state.sessionId === undefined) { applyState({ status: "ready", stepNumber: 0, pc: 0, instruction: "-", registers: {}, memoryChanges: [], output: "", error: null }, true); setStatus("Ready"); return; }
+  setBusy(true);
+  const d = await api("POST", "/reset", { sessionId: state.sessionId });
+  setBusy(false);
+  if (d.error && d.sessionId === undefined) { showError(d.error); return; }
+  applyState(d, true); setStatus("Machine reset");
+}
+async function halt() {
+  if (!state) return;
+  setBusy(true);
+  const d = await api("POST", "/halt", { sessionId: state.sessionId });
+  setBusy(false);
+  if (d.error && d.sessionId === undefined) { showError(d.error); return; }
+  applyState(d, false); setStatus("Halted");
+}
+async function save() {
+  if (busy) return;
+  showError(""); setBusy(true);
+  const d = await api("PUT", "/programs/" + encodeURIComponent(programId), { sourceCode: code.value });
+  setBusy(false);
+  if (d.error) { showError(d.error); setStatus("Could not save"); return; }
+  savedText = code.value; updateDirty(); setStatus("Saved");
+}
+$("runBtn").onclick = () => exec("run");
+$("stepBtn").onclick = () => exec("step");
+$("resetBtn").onclick = reset;
+$("haltBtn").onclick = halt;
+$("saveBtn").onclick = save;
+$("logoutBtn").onclick = logout;
+
+/* ---------- STATUS BAR ---------- */
+function tick() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  $("clock").textContent = p(d.getDate()) + "." + p(d.getMonth() + 1) + "." + d.getFullYear() + "  " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+}
+tick(); setInterval(tick, 1000);
+$("mode").textContent = CONFIG.DEMO_MODE ? "DEMO" : "LIVE";
+$("demoHelp").hidden = !CONFIG.DEMO_MODE;
+$("who").textContent = fullName || user || "USER";
+$("welcome").textContent = fullName || user || "-";
+$("roleBadge").textContent = role || "-";
+$("roleBadge").classList.add((role || "").toLowerCase());
+
+/* ---------- OPEN THE PROGRAM ---------- */
+async function load() {
+  const d = await api("GET", "/programs/" + encodeURIComponent(programId));
+  if (d.error) { showError(d.error); $("pname").textContent = "Program not found"; setStatus("Could not load"); return; }
+  $("pname").textContent = d.programName;
+  document.title = "RVCE - " + d.programName;
+  savedText = d.sourceCode || "";
+  code.value = savedText || (CONFIG.DEMO_MODE ? DEMO_EXAMPLE : "");
+  updateGutter(); updateDirty();
+  applyState({ status: "ready", stepNumber: 0, pc: 0, instruction: "-", registers: {}, memoryChanges: [], output: "", error: null }, true);
+  setStatus("Ready");
+}
+if (token && programId) load();
+</script>
+</body>
+</html>
